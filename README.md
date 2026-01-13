@@ -1,55 +1,150 @@
 # cl-stringr
 
-Common Lisp port of R's `stringr`. A consistent, simple, and easy-to-use string manipulation library wrapper around `cl-ppcre`.
+`cl-stringr` is a Common Lisp port of R's iconic `stringr` package. It provides a consistent, simple, and powerful API for string manipulation, designed to be the backbone of the `cl-tidyverse` ecosystem.
 
-## Philosophy
-- **Prefix**: All core functions start with `str-`.
-- **Vectorized**: Functions take vectors and return vectors (vector-in, vector-out).
-- **NA Handling**: `nil` is treated as NA. Operations on `nil` return `nil`.
+---
 
-## Installation
-Currently in development as part of `cl-tidyverse`.
+## For Common Lisp Developers: Why use this?
 
-## Core API
+If you are a seasoned Lisp developer, you might ask: *"Common Lisp already has `cl-ppcre` and string functions. Why do I need this?"*
+
+**The Problem:** Traditional string manipulation often involves manual loops, mapcar calls, and defensive `if (null ...)` checks to avoid errors on missing data.
+
+**The Solution:** `cl-stringr` abstracts away the boilerplate. It introduces **Vectorization** and **NA-Awareness**.
+
+### 1. Vectorization: Stop Thinking in Loops
+Instead of mapping over a list of strings, you pass the whole vector to a `str-` function. It handles the iteration for you.
+
+```lisp
+;; Traditional Lisp
+(map 'vector (lambda (s) (when s (string-trim " " s))) #("  a " nil " b  "))
+
+;; With cl-stringr
+(str-trim #("  a " nil " b  "))
+;; => #("a" nil "b")
+```
+
+### 2. NA-Awareness: The Power of `nil`
+In data science, missing data is common. `cl-stringr` treats `nil` as "NA" (Not Available). Any operation on `nil` returns `nil`, rather than crashing or requiring an extra check. This allows you to chain operations safely.
+
+---
+
+## Quick Reference for R / Tidyverse Users
+
+If you know `stringr`, you already know `cl-stringr`. The mapping is direct:
+
+| stringr (R) | cl-stringr (CL) |
+| :--- | :--- |
+| `str_length(x)` | `(str-length x)` |
+| `str_c(x, y)` | `(str-c x y)` |
+| `str_detect(x, pat)` | `(str-detect x pat)` |
+| `str_replace_all(x, pat, rep)` | `(str-replace-all x pat rep)` |
+| `str_glue("hi {var}")` | `(str-glue "hi {var}")` |
+
+*Note: All functions take the subject string (or vector) as the **first** argument, making them pipe-friendly.*
+
+---
+
+## Deep Dive & Tutorial
+
+### 1. Advanced String Interpolation with `str-glue`
+`str-glue` is a modern alternative to `format`. It uses `{}` to interpolate variables directly.
+
+#### Simple usage:
+```lisp
+(str-glue "Hello {name}, you have {count} messages." :name "Alice" :count 5)
+;; => #("Hello Alice, you have 5 messages.")
+```
+
+#### The `with-str-context` Power-Up
+When you have many variables, providing them as keywords to `str-glue` can be tedious. `with-str-context` creates an environment where a local `glue` function automatically "sees" your variables.
+
+```lisp
+(defvar *user-name* "Josephus")
+(defvar *status* "Online")
+
+(with-str-context (name *user-name* status *status*)
+  ;; The local 'glue' function automatically knows about 'name' and 'status'
+  (glue "[{status}] User: {name}"))
+;; => #("[Online] User: Josephus")
+```
+It can also take a plist-style list:
+```lisp
+(with-str-context (:x 10 :y 20)
+  (glue "Point: ({x}, {y})"))
+;; => #("Point: (10, 20)")
+```
+
+---
+
+### 2. Pattern Matching & Extraction
+`cl-stringr` wraps the high-performance `cl-ppcre` engine.
+
+- **`str-detect`**: Returns a boolean vector. Great for filtering.
+- **`str-extract`**: Pulls out the first matching substring.
+- **`str-extract-all`**: Returns a vector of vectors containing all matches.
+
+```lisp
+(defvar *files* #("data_2023.csv" "report_v1.pdf" "summary_2024.csv"))
+
+;; Find all files from 2023 or 2024
+(str-subset *files* "202[34]")
+;; => #("data_2023.csv" "summary_2024.csv")
+
+;; Extract the year as a number
+(map-str #'parse-integer (str-extract *files* "\\d{4}"))
+;; => #(2023 nil 2024)  ; report_v1 has no year, returns nil safely!
+```
+
+---
+
+### 3. Mass Replacement
+Clean up strings across a whole dataset with one call.
+
+```lisp
+(str-replace-all #("apple" "banana") "[aeiou]" "_")
+;; => #("_ppl_" "b_n_n_")
+```
+
+---
+
+## Full API Reference
 
 ### Basics
-- `str-length (s)`
-- `str-c (&rest strings)`
-- `str-sub (s start &optional end)`
-- `str-trim (s)`
+- `str-length (s)`: Returns length for each string.
+- `str-c (&rest strings)`: Concatenates vectors element-wise.
+- `str-sub (s start &optional end)`: Vectorized `subseq`.
+- `str-trim (s)`: Vectorized whitespace trim.
 
 ### Pattern Matching
-- `str-detect (s pattern)`
-- `str-subset (s pattern)`
-- `str-count (s pattern)`
-- `str-extract (s pattern)`
-- `str-extract-all (s pattern)`
+- `str-detect (s pattern)`: Boolean match.
+- `str-subset (s pattern)`: Filter to matching elements.
+- `str-count (s pattern)`: Count occurrences.
+- `str-extract (s pattern)`: Extract first match.
+- `str-extract-all (s pattern)`: Extract all matches.
 
 ### Mutation
-- `str-replace (s pattern replacement)`
-- `str-replace-all (s pattern replacement)`
+- `str-replace (s pattern replacement)`: Replace first match.
+- `str-replace-all (s pattern replacement)`: Replace all matches.
 
 ### Splitting/Joining
-- `str-split (s pattern)`
-- `str-join (s &optional collapse)`
+- `str-split (s pattern)`: Split into vectors of pieces.
+- `str-join (s &optional (collapse ""))`: Collapse vector into one string.
 
-### Interpolation
-- `str-glue (template &rest data)`
+### Interpolation & DSL
+- `str-glue (template &rest data)`: Variable interpolation.
+- `with-str-context (bindings &body body)`: Macro for cleaner templates.
+- `map-str (fn vector)`: Mapping utility that handles `nil`.
+- `filter-str (pattern vector)`: Alias for `str-subset`.
 
-## Lisp DSL
-- `with-str-context`: A macro to bind local variables for interpolation.
-- `map-str`: Functional mapping over string vectors with NA handling.
+---
 
-## Example
-```lisp
-(use-package :cl-stringr)
+## 🚶 Implementation Walkthrough
+`cl-stringr` is engineered for performance and consistency. It uses a core `vmap` utility that ensures near-native speed for vectorized operations while maintaining strict R-compatible behavior for missing values.
 
-(str-length #("hello" nil "world"))
-;; => #(5 nil 5)
+It is a member of the **[cl-tidyverse](https://github.com/cl-tidyverse)** collection, intended to provide Common Lisp with the same expressive power for data manipulation as the R ecosystem.
 
-(str-c #("f" nil) #("oo" "bar"))
-;; => #("foo" nil)
+---
 
-(str-glue "Hello {name}!" :name "Alice")
-;; => #("Hello Alice!")
-```
+## License
+MIT

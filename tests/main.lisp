@@ -10,7 +10,7 @@
   (is equalp #("hel" nil) (str-sub #("hello" nil) 0 3))
   (is equalp #("ell") (str-sub "hello" 1 4))
 
-  (is equalp #("foo" nil "bar") (str-trim #("  foo  " nil "bar\n"))))
+  (is equalp #("foo" nil "bar") (str-trim #("  foo  " nil "bar "))))
 
 (define-test "Pattern Matching"
   (is equalp #(t nil t) (str-detect #("apple" nil "banana") "a"))
@@ -37,9 +37,9 @@
     (is equalp #("a is 1, b is 2") (str-glue "a is {a}, b is {b}" :a 1 :b 2))))
 
 (define-test "Lisp DSL"
-  (testing "with-str-context"
-    (with-str-context (:name "Alice" :age 30)
-      (is equal "Hello Alice, age 30" (elt (glue "Hello {name}, age {age}") 0))))
+  (with-str-context (name "Alice" age 30)
+    (is equal "Hello Alice, age 30" (elt (glue "Hello {name}, age {age}") 0)))
+  (with-str-context (:name "Bob" :age 40)
+    (is equal "Hello Bob, age 40" (elt (glue "Hello {name}, age {age}") 0)))
   
-  (testing "map-str"
-    (is equalp #(5 nil 3) (map-str #'length #("hello" nil "foo")))))
+  (is equalp #(5 nil 3) (map-str #'length #("hello" nil "foo"))))

@@ -26,7 +26,10 @@
    #:str-glue
    
    ;; DSL
-   #:with-str-context))
+   #:with-str-context
+   #:glue
+   #:map-str
+   #:filter-str))
 
 (defpackage #:cl-stringr-user
   (:use #:cl #:cl-stringr))
