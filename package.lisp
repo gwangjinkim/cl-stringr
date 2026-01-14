@@ -1,5 +1,6 @@
 (defpackage #:cl-stringr
   (:use #:cl)
+  (:nicknames #:stringr)
   (:export
    ;; Basics
    #:str-length
