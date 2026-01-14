@@ -17,3 +17,22 @@
 (define-str-op str-trim (s)
   "Removes leading and trailing whitespace."
   (string-trim '(#\Space #\Tab #\Newline #\Return) s))
+
+(define-str-op str-to-upper (s)
+  "Converts strings to uppercase."
+  (string-upcase s))
+
+(define-str-op str-to-lower (s)
+  "Converts strings to lowercase."
+  (string-downcase s))
+
+(define-str-op str-to-title (s)
+  "Converts strings to title case (capitalizes first letter of each word)."
+  (string-capitalize s))
+
+(define-str-op str-to-sentence (s)
+  "Converts strings to sentence case (capitalizes first letter of the string)."
+  (let ((lower (string-downcase s)))
+    (if (plusp (length lower))
+        (concatenate 'string (string (char-upcase (char lower 0))) (subseq lower 1))
+        lower)))

@@ -2,7 +2,7 @@
 
 # Canonical test command (Roswell, clean session)
 test:
-	XDG_CACHE_HOME=$(PWD)/build ros -Q run --load scripts/test.ros --quit
+	XDG_CACHE_HOME=$(PWD)/build ros run --load scripts/test.ros --quit
 
 # Optional: start an interactive REPL that loads the local .asd and quickloads the system
 repl:

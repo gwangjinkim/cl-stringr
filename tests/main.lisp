@@ -10,7 +10,12 @@
   (is equalp #("hel" nil) (str-sub #("hello" nil) 0 3))
   (is equalp #("ell") (str-sub "hello" 1 4))
 
-  (is equalp #("foo" nil "bar") (str-trim #("  foo  " nil "bar "))))
+  (is equalp #("foo" nil "bar") (str-trim #("  foo  " nil "bar ")))
+  
+  (is equalp #("ABC" nil) (str-to-upper #("abc" nil)))
+  (is equalp #("abc" nil) (str-to-lower #("ABC" nil)))
+  (is equalp #("Hello World" nil) (str-to-title #("hello world" nil)))
+  (is equalp #("Hello world" nil) (str-to-sentence #("HELLO WORLD" nil))))
 
 (define-test "Pattern Matching"
   (is equalp #(t nil t) (str-detect #("apple" nil "banana") "a"))

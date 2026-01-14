@@ -25,6 +25,14 @@
   - Concatenates multiple string vectors element-wise.
 - `str-trim (string-vector)` -> `vector-of-strings`
   - Removes leading and trailing whitespace.
+- `str-to-upper (string-vector)` -> `vector-of-strings`
+  - Converts strings to uppercase.
+- `str-to-lower (string-vector)` -> `vector-of-strings`
+  - Converts strings to lowercase.
+- `str-to-title (string-vector)` -> `vector-of-strings`
+  - Converts strings to title case (capitalizes first letter of each word).
+- `str-to-sentence (string-vector)` -> `vector-of-strings`
+  - Converts strings to sentence case (capitalizes first letter of the string).
 
 ### Pattern Matching
 - `str-detect (string-vector, pattern)` -> `vector-of-booleans`

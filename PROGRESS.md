@@ -10,7 +10,7 @@ This document reports the progress of the `cl-stringr` project from inception to
 
 ### ✅ Milestone 1: Basic String Operations
 *   **Goal**: Implement fundamental R-style string functions.
-*   **Accomplishment**: Implemented `str-length`, `str-sub`, `str-c`, and `str-trim`. Verified that these functions correctly handle scalars vs vectors and preserve `nil`.
+*   **Accomplishment**: Implemented `str-length`, `str-sub`, `str-c`, and `str-trim`. Added case conversion functions: `str-to-upper`, `str-to-lower`, `str-to-title`, and `str-to-sentence`. Verified that these functions correctly handle scalars vs vectors and preserve `nil`.
 
 ### ✅ Milestone 2: Pattern Matching (Detection & Counting)
 *   **Goal**: Integrate `cl-ppcre` for pattern detection.

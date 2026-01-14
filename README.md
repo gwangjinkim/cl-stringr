@@ -39,6 +39,8 @@ If you know `stringr`, you already know `cl-stringr`. The mapping is direct:
 | `str_c(x, y)` | `(str-c x y)` |
 | `str_detect(x, pat)` | `(str-detect x pat)` |
 | `str_replace_all(x, pat, rep)` | `(str-replace-all x pat rep)` |
+| `str_to_upper(x)` | `(str-to-upper x)` |
+| `str_to_title(x)` | `(str-to-title x)` |
 | `str_glue("hi {var}")` | `(str-glue "hi {var}")` |
 
 *Note: All functions take the subject string (or vector) as the **first** argument, making them pipe-friendly.*
@@ -108,6 +110,52 @@ Clean up strings across a whole dataset with one call.
 
 ---
 
+### 4. Case Conversion
+`cl-stringr` provides several functions to change the case of strings, mapping directly to R's `str_to_*` family.
+
+```lisp
+(defvar *names* #("albert einstein" "MARIE CURIE" nil))
+
+(str-to-title *names*)
+;; => #("Albert Einstein" "Marie Curie" nil)
+
+(str-to-upper "hello")
+;; => #("HELLO")
+
+(str-to-sentence "THIS IS A TEST")
+;; => #("This is a test")
+```
+
+---
+
+### 5. Splitting and Joining
+Easily break strings apart or sew them back together.
+
+```lisp
+(str-split #("a,b,c" "d,e") ",")
+;; => #(#("a" "b" "c") #("d" "e"))
+
+(str-join #("apple" "banana" "cherry") ", ")
+;; => "apple, banana, cherry"
+
+;; Handles NA (nil) gracefully
+(str-join #("apple" nil "cherry") ", ")
+;; => nil  ; Following stringr: if any element is NA, the join is NA
+```
+
+---
+
+### 6. Integration with `cl-dplyr`
+`cl-stringr` is designed to be used inside `cl-dplyr` verbs for seamless data cleaning.
+
+```lisp
+(-> df
+  (mutate :clean-name (str-trim (str-to-title :raw-name)))
+  (filter (str-detect :clean-name "John")))
+```
+
+---
+
 ## Full API Reference
 
 ### Basics
@@ -115,6 +163,10 @@ Clean up strings across a whole dataset with one call.
 - `str-c (&rest strings)`: Concatenates vectors element-wise.
 - `str-sub (s start &optional end)`: Vectorized `subseq`.
 - `str-trim (s)`: Vectorized whitespace trim.
+- `str-to-upper (s)`: All uppercase.
+- `str-to-lower (s)`: All lowercase.
+- `str-to-title (s)`: Title case (Capitalize Each Word).
+- `str-to-sentence (s)`: Sentence case (Capitalize first letter, rest lower).
 
 ### Pattern Matching
 - `str-detect (s pattern)`: Boolean match.

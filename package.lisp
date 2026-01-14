@@ -7,6 +7,10 @@
    #:str-sub
    #:str-c
    #:str-trim
+   #:str-to-upper
+   #:str-to-lower
+   #:str-to-title
+   #:str-to-sentence
    
    ;; Pattern Matching
    #:str-detect

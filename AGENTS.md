@@ -13,6 +13,10 @@ Group: **Basic**
 - [ ] `str-sub`
 - [ ] `str-c`
 - [ ] `str-trim`
+- [ ] `str-to-upper`
+- [ ] `str-to-lower`
+- [ ] `str-to-title`
+- [ ] `str-to-sentence`
 - [ ] Unit tests for basic operations.
 
 ### Milestone 2: Pattern Matching (Detection & Counting)

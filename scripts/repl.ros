@@ -5,17 +5,17 @@
 (require :asdf)
 
 (let* ((root (uiop:getcwd))
-       (asd  (merge-pathnames "cl-tibble.asd" root)))
+       (asd  (merge-pathnames "cl-stringr.asd" root)))
   (asdf:load-asd asd))
 
 ;; If you use Quicklisp, this will work after ASDF knows about the system.
-;; If you don't use Quicklisp, replace with (asdf:load-system :cl-tibble).
+;; If you don't use Quicklisp, replace with (asdf:load-system :cl-stringr).
 (handler-case
     (progn
-      (ql:quickload :cl-tibble)
-      (format t "~&cl-tibble loaded. Package: CL-TIBBLE~%"))
+      (ql:quickload :cl-stringr)
+      (format t "~&cl-stringr loaded. Package: CL-STRINGR~%"))
   (error ()
-    (asdf:load-system :cl-tibble)
-    (format t "~&cl-tibble loaded via ASDF. Package: CL-TIBBLE~%")))
+    (asdf:load-system :cl-stringr)
+    (format t "~&cl-stringr loaded via ASDF. Package: CL-STRINGR~%")))
 
 ;; Do not quit; drop into REPL
