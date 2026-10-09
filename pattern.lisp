@@ -10,7 +10,9 @@
          (matches (str-detect vec pattern))
          (result (make-array (count t matches) :fill-pointer 0 :adjustable t)))
     (loop for i from 0 below (length vec)
-          when (elt matches i)
+          ;; only definite matches: a missing input gives NA/NIL, never T,
+          ;; so it is dropped (like R's str_subset)
+          when (eq t (elt matches i))
           do (vector-push-extend (elt vec i) result))
     result))
 

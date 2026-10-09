@@ -7,6 +7,6 @@
 (defun str-join (string-vector &optional (collapse ""))
   "Joins elements of a vector into a single string."
   (let ((vec (if (and (vectorp string-vector) (not (stringp string-vector))) string-vector (vector string-vector))))
-    (if (some #'null (coerce vec 'list))
-        nil
+    (if (some #'missing-p (coerce vec 'list))
+        (missing-result (coerce vec 'list))
         (format nil (format nil "~~{~~a~~^~a~~}" collapse) (coerce vec 'list)))))

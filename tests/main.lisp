@@ -48,3 +48,18 @@
     (is equal "Hello Bob, age 40" (elt (glue "Hello {name}, age {age}") 0)))
   
   (is equalp #(5 nil 3) (map-str #'length #("hello" nil "foo"))))
+
+(define-test "Missing values (cl-vctrs-lite:*na*)"
+  ;; cl-readr represents missing cells as *na*; every op must propagate it
+  ;; instead of signalling a type error. NIL inputs still give NIL.
+  (let ((na cl-vctrs-lite:*na*))
+    (is equalp (vector 5 na 1) (str-length (vector "hello" na "x")))
+    (is equalp (vector "hi" na) (str-trim (vector " hi " na)))
+    (is equalp (vector "HI" na) (str-to-upper (vector "hi" na)))
+    (is equalp (vector t na nil) (str-detect (vector "hi" na "x") "h"))
+    (is equalp (vector "hi!" na) (str-c (vector "hi" na) "!"))
+    (is equalp (vector 1 na) (str-count (vector "hi" na) "h"))
+    (is equalp (vector "Hi" na) (str-replace (vector "hi" na) "h" "H"))
+    (is eq na (str-join (vector "a" na "c") "-"))
+    (is equalp #("hi") (str-subset (vector "hi" na "x") "h"))
+    (is equalp #(5 nil) (str-length #("hello" nil)))))
