@@ -6,6 +6,11 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed
+- Removed emojis from README.md and PROGRESS.md (maintainer preference: no emojis in
+  documentation). Meaning is kept in words where an emoji carried it
+  (topic: docs style).
+
 ### Fixed
 - **Every function signalled a type error on `cl-vctrs-lite:*na*`**
   (`NA is not a string designator`, `The value NA is not of type ...`).

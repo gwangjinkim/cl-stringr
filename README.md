@@ -191,7 +191,7 @@ Easily break strings apart or sew them back together.
 
 ---
 
-## 🚶 Implementation Walkthrough
+## Implementation Walkthrough
 `cl-stringr` is engineered for performance and consistency. It uses a core `vmap` utility that ensures near-native speed for vectorized operations while maintaining strict R-compatible behavior for missing values.
 
 It is a member of the **[cl-tidyverse](https://github.com/cl-tidyverse)** collection, intended to provide Common Lisp with the same expressive power for data manipulation as the R ecosystem.

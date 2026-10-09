@@ -4,35 +4,35 @@ This document reports the progress of the `cl-stringr` project from inception to
 
 ## Timeline & Milestones
 
-### ✅ Milestone 0: Project Setup
+### Milestone 0: Project Setup (done)
 *   **Goal**: Initialize ASDF, package structure, and core vectorization engine.
 *   **Accomplishment**: Created `cl-stringr.asd` and `package.lisp`. Developed the `vmap` utility to handle "vector-in, vector-out" logic with explicit `nil` (NA) support. Introduced `define-str-op` to streamline function definitions.
 
-### ✅ Milestone 1: Basic String Operations
+### Milestone 1: Basic String Operations (done)
 *   **Goal**: Implement fundamental R-style string functions.
 *   **Accomplishment**: Implemented `str-length`, `str-sub`, `str-c`, and `str-trim`. Added case conversion functions: `str-to-upper`, `str-to-lower`, `str-to-title`, and `str-to-sentence`. Verified that these functions correctly handle scalars vs vectors and preserve `nil`.
 
-### ✅ Milestone 2: Pattern Matching (Detection & Counting)
+### Milestone 2: Pattern Matching (Detection & Counting) (done)
 *   **Goal**: Integrate `cl-ppcre` for pattern detection.
 *   **Accomplishment**: Implemented `str-detect`, `str-subset`, and `str-count`. Refined regex handling to be consistent with R's `stringr` expectations.
 
-### ✅ Milestone 3: Pattern Extraction
+### Milestone 3: Pattern Extraction (done)
 *   **Goal**: Allow extracting specific parts of strings.
 *   **Accomplishment**: Implemented `str-extract` (first match) and `str-extract-all` (all matches).
 
-### ✅ Milestone 4: Replacement and Mutation
+### Milestone 4: Replacement and Mutation (done)
 *   **Goal**: Powerful search-and-replace capabilities.
 *   **Accomplishment**: Implemented `str-replace` and `str-replace-all`. Optimized for Common Lisp's symbol and string handling.
 
-### ✅ Milestone 5: Splitting and Joining
+### Milestone 5: Splitting and Joining (done)
 *   **Goal**: Restructure strings.
 *   **Accomplishment**: Implemented `str-split` (returning vectors of vectors) and `str-join` (collapsing vectors into single strings).
 
-### ✅ Milestone 6: String Interpolation (Glue)
+### Milestone 6: String Interpolation (Glue) (done)
 *   **Goal**: Modern string templating.
 *   **Accomplishment**: Built the `str-glue` engine. Supports `{var}` syntax with lookups in plists or the local environment.
 
-### ✅ Milestone 7: Lisp DSL & Tidyverse Integration
+### Milestone 7: Lisp DSL & Tidyverse Integration (done)
 *   **Goal**: Make the library feel at home in both R-style and Lisp-style codebases.
 *   **Accomplishment**: 
     *   Created `with-str-context` macro for clean template generation.
