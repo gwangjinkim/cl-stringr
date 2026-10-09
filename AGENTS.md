@@ -90,3 +90,17 @@ why, and what it means for users. Agents and humans follow these rules.
    `cl-dplyr`) are recorded in both repos' changelogs and in
    `../cl-tidystat/docs/CHANGES-phase*.md`, which links the commits.
 7. **Push only after review**; do not rewrite history that has been pushed.
+
+## Parity work (R tidyverse equivalence)
+
+This repository is part of the plan to reach full parity with the current
+R tidyverse. Milestones owned by this repository: **SR1, SR2, SR3, SR4**.
+
+- Plan, conventions (R -> Lisp names, arguments, types, 0-based indices)
+  and the step-by-step workflow: `docs/PARITY-PLAN.md` in
+  `../cl-tidystat` (GitHub: gwangjinkim/cl-tidystat, private; ask the
+  maintainer for access).
+- Function lists with status and target names:
+  `../cl-tidystat/parity/backlog/<ID>.md`; overview in `INDEX.md`.
+- Work on a branch `feat/parity-<ID>`, write conformance cases first,
+  and regenerate the parity status in cl-tidystat after each step.

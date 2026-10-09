@@ -7,6 +7,9 @@ All notable changes to this project are documented here. Format follows
 ## [Unreleased]
 
 ### Changed
+- AGENTS.md: "Parity work" section listing this repository's parity
+  milestones (SR1, SR2, SR3, SR4) and where the plan and backlog live
+  (topic: parity plan).
 - Removed emojis from README.md and PROGRESS.md (maintainer preference: no emojis in
   documentation). Meaning is kept in words where an emoji carried it
   (topic: docs style).
