@@ -12,7 +12,8 @@
                (:file "replacement")
                (:file "structure")
                (:file "glue")
-               (:file "dsl")))
+               (:file "dsl"))
+  :in-order-to ((asdf:test-op (asdf:test-op #:cl-stringr/tests))))
 
 (asdf:defsystem #:cl-stringr/tests
   :description "Tests for cl-stringr"
@@ -21,4 +22,10 @@
   :depends-on ("cl-stringr" "parachute")
   :components ((:module "tests"
                 :components ((:file "package")
-                             (:file "main")))))
+                             (:file "main"))))
+  :perform (asdf:test-op (op c)
+             (declare (ignore op c))
+             ;; Signal failure to the caller (e.g. CI) instead of only printing.
+             (let ((report (uiop:symbol-call :parachute :test :cl-stringr/tests)))
+               (when (eq :failed (uiop:symbol-call :parachute :status report))
+                 (error "cl-stringr tests failed")))))
