@@ -31,6 +31,11 @@
   (and (realp value)
        #+sbcl (not (and (floatp value) (or (sb-ext:float-nan-p value) (sb-ext:float-infinity-p value))))))
 
+(defun infinite-time-p (value)
+  #+sbcl (and (floatp value) (sb-ext:float-infinity-p value))
+  #-sbcl (declare (ignore value))
+  #-sbcl nil)
+
 (defun time-decimals (seconds)
   (let* ((fraction (- (abs seconds) (floor (abs seconds))))
          (text (numeric-string fraction)) (epos (position #\e text))
@@ -45,7 +50,7 @@
   (let* ((finite (remove-if-not #'finite-time-p (coerce values 'list)))
          (digits (if finite (reduce #'max finite :key #'time-decimals) 0))
          (scale (expt 10 digits))
-         (width (max 2 (if finite (reduce #'max finite :key
+         (width (max 2 (if (some #'infinite-time-p (coerce values 'list)) 3 2) (if finite (reduce #'max finite :key
                           (lambda (s) (length (format nil "~d" (floor (abs s) 3600))))) 2))))
     (map 'vector
          (lambda (seconds)
@@ -58,7 +63,7 @@
                            (whole (floor ticks scale)) (fraction (mod ticks scale))
                            (hours (floor whole 3600)) (minutes (floor (mod whole 3600) 60))
                            (secs (mod whole 60)))
-                      (concatenate 'string (if (minusp seconds) "-" "")
+                      (concatenate 'string (if (and (minusp seconds) (plusp ticks)) "-" "")
                                    (format nil "~v@a:~2,'0d:~2,'0d" width (format nil "~2,'0d" hours) minutes secs)
                                    (if (zerop digits) "" (format nil ".~v,'0d" digits fraction)))))))
          values)))

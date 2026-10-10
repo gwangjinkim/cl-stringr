@@ -168,3 +168,12 @@
                    (sb-kernel:make-double-float #x7ff80000 0))))
   (is equalp (vector "00:00:01\\.0" "00:00:01\\.5" cl-vctrs-lite:*na*)
       (str-escape (cl-vctrs-lite:make-typed-column (vector 1d0 1.5d0 cl-vctrs-lite:*na*) :time))))
+
+(define-test "SR1 hms rounded zero and nonfinite alignment"
+  (is equalp #("00:00:00\\.000000" "00:00:00\\.000000" "00:00:01\\.000000")
+      (str-escape (cl-vctrs-lite:make-typed-column #(-1d-7 0d0 1d0) :time)))
+  (is equalp (vector "Inf:NaN:NaNNaN" "-Inf:NaN:NaNNaN" cl-vctrs-lite:*na*
+                    cl-vctrs-lite:*na* " 00:00:01\\.5")
+      (str-escape (cl-vctrs-lite:make-typed-column
+                   (vector sb-ext:double-float-positive-infinity sb-ext:double-float-negative-infinity
+                     (sb-kernel:make-double-float #x7ff80000 0) cl-vctrs-lite:*na* 1.5d0) :time))))

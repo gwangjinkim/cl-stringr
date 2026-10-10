@@ -22,12 +22,19 @@ All notable changes to this project are documented here. Format follows
   Native offsets retain the original Lisp strings (topic: SR1 modifiers).
 
 ### Fixed
+- HMS coercion removes a negative sign when fractional seconds round to
+  zero and includes infinite hours when aligning finite labels. This
+  prevents modifier/escaping mismatches against R on tiny negatives and
+  mixed nonfinite columns (topic: hms coercion edge cases).
 - Pattern operations retain C2 prototypes and owner-label coercion for
   numeric/logical/factor/UTC temporal columns, including typed empties and
   fractional timestamps. Native initialization errors release the library
   and clear all state before retry (topic: SR1 modifiers).
 
 ### Tests
+- HMS rounding/alignment regressions add two unit checks and two pinned R
+  cases. Stringr passes 125/125 unit checks and 219/219 conformance cases;
+  the two new R cases both failed before repair (topic: hms coercion edge cases).
 - SR1 adds constructor, matching, Unicode segmentation, recycling, typed
   owner/coercion and native failure-recovery unit regressions. Umbrella
   stringr suite: 123/123 checks, previously 37/37. R conformance: 209 new
