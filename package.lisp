@@ -19,6 +19,8 @@
    #:pattern-scanner #:pattern-matches-p #:pattern-error #:pattern-warning
 
    ;; Pattern Matching
+   #:str-starts #:str-ends #:str-which #:str-like #:str-ilike
+   #:str-locate #:str-locate-all #:str-match #:str-match-all #:invert-match
    #:str-detect
    #:str-subset
    #:str-count

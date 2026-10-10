@@ -76,36 +76,12 @@
              (ecase operation (:detect :bool) (:count :int) (:extract :string)
                     ((:extract-all :split) :list) ((:replace :replace-all) :string))))))
 
-(defun str-detect (s pattern)
-  "R: stringr::str_detect(). Detect scalar or vector patterns, propagating NA.
-Accepts regex/fixed/coll objects with strict scalar recycling; boundary is invalid."
-  (let ((result (pattern-map :detect s pattern)))
-    result))
-
 (defun pattern-matches-p (pattern string)
   "R: stringr::str_detect(). Match a scalar pattern using native ICU Unicode semantics; NA propagates.
 Regex, fixed and coll objects are accepted. Boundary patterns signal an error."
   (let ((result (str-detect string pattern)))
     (unless (= 1 (length result)) (fail-pattern "A scalar pattern is required."))
     (aref result 0)))
-
-(defun str-subset (s pattern)
-  "R: stringr::str_subset(). Keep definite pattern matches and drop NA."
-  (let* ((strings (input-strings s)) (matches (str-detect strings pattern)))
-    (unless (= (length strings) (length matches)) (fail-pattern "Subset pattern must not expand strings."))
-    (coerce (loop for s across strings for match across matches when (eq match t) collect s) 'vector)))
-
-(defun str-extract (s pattern)
-  "R: stringr::str_extract(). Return the first match or NA, with modifier support."
-  (pattern-map :extract s pattern))
-
-(defun str-count (s pattern)
-  "R: stringr::str_count(). Count nonoverlapping matches or Unicode boundary segments."
-  (pattern-map :count s pattern))
-
-(defun str-extract-all (s pattern)
-  "R: stringr::str_extract_all(). Return vectors of matches, including nested NA."
-  (pattern-map :extract-all s pattern))
 
 (defun str-equal (x y &rest options &key (locale "en") (ignore-case nil) &allow-other-keys)
   "R: stringr::str_equal(). Compare canonically equivalent strings with ICU.

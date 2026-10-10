@@ -7,6 +7,13 @@ All notable changes to this project are documented here. Format follows
 ## [Unreleased]
 
 ### Added
+- `parity-SR2`: Add start/end/which, location/capture matrices, inverse matches
+  and SQL-like detection; complete negate, capture selection, simplify and
+  names for existing consumers. New list outputs follow the approved names
+  protocol. Repair logical FALSE coercion, NA modifier captures and dropped
+  capture-vector names with genuine regressions. All 205 native checks and
+  421 pinned R cases pass (125 and 219 before); SR3 substring consumers remain
+  outside the location-matrix implementation.
 - SR1 pattern objects `regex`, `fixed`, `coll` and `boundary` retain vector
   values, options and names. `str-escape` and initial `str-equal` provide
   Unicode escaping/equality. Pattern consumers support those objects,

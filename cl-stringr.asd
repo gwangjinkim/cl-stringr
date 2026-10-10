@@ -11,6 +11,7 @@
                (:file "icu")
                (:file "modifiers")
                (:file "pattern")
+               (:file "detection")
                (:file "replacement")
                (:file "structure")
                (:file "glue")

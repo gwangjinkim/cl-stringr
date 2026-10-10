@@ -275,3 +275,66 @@
                          (check-icu status "replacement")
                          (utf16-to-string dest actual)))))
               (icu-call "uregex_close" :pointer matcher :void))))))))
+
+(defun icu-regex-groups (string pattern options)
+  "Return every full/capture substring, capture count and optional names.
+UTF-16 boundaries translate to Lisp character indices; unmatched groups are NA."
+  (with-utf16 (pat plen pmap pattern)
+    (declare (ignore pmap))
+    (with-utf16 (text tlen indices string)
+      (cffi:with-foreign-object (status :int32)
+        (setf (cffi:mem-ref status :int32) 0)
+        (let ((matcher (icu-call "uregex_open" :pointer pat :int32 plen
+                                 :uint32 (regex-flags options) :pointer (cffi:null-pointer)
+                                 :pointer status :pointer)))
+          (check-icu status "capture compilation")
+          (unwind-protect
+               (progn
+                 (icu-call "uregex_setText" :pointer matcher :pointer text :int32 tlen :pointer status :void)
+                 (apply-regex-limits matcher options status)
+                 (let* ((count (icu-call "uregex_groupCount" :pointer matcher :pointer status :int32))
+                        (labels (make-array (1+ count) :initial-element "")) (named nil) (rows nil))
+                   ;; Candidate names are checked against the compiled matcher,
+                   ;; so lookbehind, escaped tokens and comments cannot invent groups.
+                   (loop for at = (search "(?<" pattern) then (search "(?<" pattern :start2 (+ at 3))
+                         while at for end = (position #\> pattern :start (+ at 3))
+                         when end do
+                           (let ((name (subseq pattern (+ at 3) end)))
+                             (when (and (plusp (length name)) (every #'alphanumericp name))
+                               (with-utf16 (np nlen nm name)
+                                 (declare (ignore nm))
+                                 (let ((group (icu-call "uregex_groupNumberFromName" :pointer matcher :pointer np
+                                                       :int32 nlen :pointer status :int32)))
+                                   (if (and (zerop (cffi:mem-ref status :int32)) (<= 1 group count))
+                                       (setf (aref labels group) name named t)
+                                       (setf (cffi:mem-ref status :int32) 0)))))))
+                   (loop while (not (zerop (icu-call "uregex_findNext" :pointer matcher :pointer status :int8))) do
+                     (push (loop for group from 0 to count
+                                 for start = (icu-call "uregex_start" :pointer matcher :int32 group :pointer status :int32)
+                                 for end = (icu-call "uregex_end" :pointer matcher :int32 group :pointer status :int32)
+                                 collect (if (minusp start) cl-vctrs-lite:*na*
+                                             (subseq string (aref indices start) (aref indices end)))) rows))
+                   (check-icu status "capture matching")
+                   (values (nreverse rows) (1+ count) (and named labels))))
+            (icu-call "uregex_close" :pointer matcher :void)))))))
+
+(defun icu-coll-edge-p (string pattern options end-p)
+  "Use ICU's first/last search so overlapping suffix matches remain visible."
+  (with-collator options
+    (lambda (collator status)
+      (when (zerop (length string)) (return-from icu-coll-edge-p nil))
+      (with-utf16 (pat plen pm pattern)
+        (declare (ignore pm))
+        (with-utf16 (text tlen tm string)
+          (declare (ignore tm))
+          (let ((searcher (icu-call "usearch_openFromCollator" :pointer pat :int32 plen
+                                   :pointer text :int32 tlen :pointer collator
+                                   :pointer (cffi:null-pointer) :pointer status :pointer)))
+            (check-icu status "collation edge search")
+            (unwind-protect
+                 (let* ((start (cffi:foreign-funcall-pointer (icu-symbol (if end-p "usearch_last" "usearch_first")) ()
+                                                           :pointer searcher :pointer status :int32))
+                        (size (if (= start -1) 0 (icu-call "usearch_getMatchedLength" :pointer searcher :int32))))
+                   (check-icu status "collation edge search")
+                   (and (/= start -1) (if end-p (= (+ start size) tlen) (zerop start))))
+              (icu-call "usearch_close" :pointer searcher :void))))))))

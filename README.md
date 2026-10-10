@@ -24,8 +24,11 @@ Instead of mapping over a list of strings, you pass the whole vector to a `str-`
 ;; => #("a" nil "b")
 ```
 
-### 2. NA-Awareness: The Power of `nil`
-In data science, missing data is common. `cl-stringr` treats `nil` as "NA" (Not Available). Any operation on `nil` returns `nil`, rather than crashing or requiring an extra check. This allows you to chain operations safely.
+### 2. Missing values
+Use `cl-vctrs-lite:*na*` for missing values in shared typed columns.
+Legacy character inputs also accept NIL as a missing marker. In an
+unambiguous logical column NIL means FALSE and stringifies as "FALSE";
+the SR2 section below describes those compatibility boundaries.
 
 ---
 
@@ -80,7 +83,7 @@ It can also take a plist-style list:
 ---
 
 ### 2. Pattern Matching & Extraction
-`cl-stringr` wraps the high-performance `cl-ppcre` engine.
+`cl-stringr` uses the pinned native ICU engine for pattern matching.
 
 - **`str-detect`**: Returns a boolean vector. Great for filtering.
 - **`str-extract`**: Pulls out the first matching substring.
@@ -95,7 +98,7 @@ It can also take a plist-style list:
 
 ;; Extract the year as a number
 (map-str #'parse-integer (str-extract *files* "\\d{4}"))
-;; => #(2023 nil 2024)  ; report_v1 has no year, returns nil safely!
+;; => #(2023 cl-vctrs-lite:*na* 2024)  ; missing matches retain NA
 ```
 
 ---
@@ -212,12 +215,9 @@ ICU semantics.
 
 `str-equal` provides Unicode canonical equality and collation options as required
 by the SR1 plan text; its complete later milestone certification remains open.
-Likewise, modifier support does not complete the existing consumer APIs:
-all eight pattern consumers currently drop string-input names,
-`str-detect`/`str-subset` still lack `:negate`, `str-extract` lacks capture-group
-selection, `str-extract-all` lacks `:simplify`, replacements lack callback/named
-mapping forms, and `str-split` lacks `:n`/`:simplify`. Those are recorded as partial
-in the umbrella parity inventory; no later milestone was started.
+SR2 now completes detection, location and capture matching as described below.
+Replacement callback/named mapping forms and split :n/:simplify remain later
+milestone work, with explicit partial status in the umbrella inventory.
 
 ## Full API Reference
 
@@ -263,3 +263,64 @@ It is a member of the **[cl-tidyverse](https://github.com/cl-tidyverse)** collec
 
 ## License
 MIT
+
+## Detection, locations and captures (SR2)
+
+| R | Common Lisp |
+|---|---|
+| `str_detect`, `str_subset`, `str_which` | `str-detect`, `str-subset`, `str-which` (`:negate`) |
+| `str_starts`, `str_ends` | `str-starts`, `str-ends` (`:negate`) |
+| `str_count` | `str-count` (default Unicode graphemes) |
+| `str_extract`, `str_extract_all` | `str-extract` (`:group`), `str-extract-all` (`:simplify`) |
+| `str_locate`, `str_locate_all` | `str-locate`, `str-locate-all` |
+| `str_match`, `str_match_all` | `str-match`, `str-match-all` |
+| `invert_match` | `invert-match` |
+| `str_like`, `str_ilike` | `str-like`, `str-ilike` |
+
+Detection, counting and extraction preserve the input names where R does;
+subset preserves source column owners. NA uses `cl-vctrs-lite:*na*`.
+Unambiguous logical columns stringify NIL as FALSE; legacy mixed character /
+NIL inputs retain NIL as the established missing marker. Plain patterns must
+be character vectors; regex/fixed/coll modifiers keep their native options.
+Capture matching requires regex patterns. `str-which` returns zero-based
+indices. SQL-like operators implement `%` and `_`; `str-like :ignore-case`
+is deprecated and warns, while `str-ilike` always ignores case.
+
+Matrices are rank-two arrays accessed with `array-dimension` and `aref`.
+Additional return values carry column labels, row/outer names, and the
+`:int` or `:string` prototype, including empty/all-NA results. Private weak
+metadata retains those attributes for `invert-match`. `str-locate-all` and
+`str-match-all` return ordinary proper lists or string-keyed alists; only
+missing names and explicit named-empty collections use typed `:list` columns.
+Their second value holds per-matrix labels, third outer names and fourth
+prototype. Existing `str-extract-all` defaults to a vector of match vectors;
+`:simplify t` returns a matrix padded with empty strings.
+
+Capture selectors follow the same index translation: `:group 0` selects R's
+first capture (group 1), and `:group -1` selects its full match (group 0).
+Numeric vectors select several groups; their negative values translate before
+R's column-exclusion rule (`-2` encodes R group -1, selecting zero columns;
+`-3` encodes R group -2, excluding the full-match column). Fractional selectors
+truncate after translation. Logical selectors retain R arithmetic: `t` selects
+the first capture, and `#(nil)` selects the full match; bare NIL keeps the
+no-group default. Missing selectors produce NA cells. R's dimension-dropping
+rule determines whether selected captures return a vector or a matrix; matrix
+results expose labels, row names and `:string` as additional values.
+
+Location endpoints are zero-based and **inclusive**. Zero-width matches have
+end=start-1. `invert-match` subtracts one from R's sentinel coordinates too:
+leading 0 becomes -1 and trailing -1 becomes -2. These are encoded boundaries;
+the existing `str-sub` consumer has an exclusive end and does not yet support
+the full R location-matrix consumer path (SR3).
+
+```lisp
+(multiple-value-bind (locations labels names prototype)
+    (str-locate #("😀a" "x") "a")
+  (declare (ignore names prototype))
+  (list labels (aref locations 0 0) (aref locations 0 1)))
+;; => (#("start" "end") 1 1)
+```
+
+SR2 validation: 205 native checks and 421 pinned R 4.6.1 / stringr 1.6.0
+reference cases pass, including 202 new detection/location/capture cases.
+Independent review found and protected the one-row capture-name edge cases.
