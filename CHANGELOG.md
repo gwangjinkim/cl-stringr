@@ -20,6 +20,12 @@ All notable changes to this project are documented here. Format follows
   matching uses simple Unicode uppercase comparisons. Regex replacement
   keeps capture references while fixed/coll replacements are literal.
   Native offsets retain the original Lisp strings (topic: SR1 modifiers).
+- AGENTS.md: "Parity work" section listing this repository's parity
+  milestones (SR1, SR2, SR3, SR4) and where the plan and backlog live
+  (topic: parity plan).
+- Removed emojis from README.md and PROGRESS.md (maintainer preference: no emojis in
+  documentation). Meaning is kept in words where an emoji carried it
+  (topic: docs style).
 
 ### Fixed
 - HMS coercion removes a negative sign when fractional seconds round to
@@ -30,26 +36,6 @@ All notable changes to this project are documented here. Format follows
   numeric/logical/factor/UTC temporal columns, including typed empties and
   fractional timestamps. Native initialization errors release the library
   and clear all state before retry (topic: SR1 modifiers).
-
-### Tests
-- HMS rounding/alignment regressions add two unit checks and two pinned R
-  cases. Stringr passes 125/125 unit checks and 219/219 conformance cases;
-  the two new R cases both failed before repair (topic: hms coercion edge cases).
-- SR1 adds constructor, matching, Unicode segmentation, recycling, typed
-  owner/coercion and native failure-recovery unit regressions. Umbrella
-  stringr suite: 123/123 checks, previously 37/37. R conformance: 209 new
-  cases, 217 total stringr cases, all passing (topic: SR1 modifiers).
-
-
-### Changed
-- AGENTS.md: "Parity work" section listing this repository's parity
-  milestones (SR1, SR2, SR3, SR4) and where the plan and backlog live
-  (topic: parity plan).
-- Removed emojis from README.md and PROGRESS.md (maintainer preference: no emojis in
-  documentation). Meaning is kept in words where an emoji carried it
-  (topic: docs style).
-
-### Fixed
 - **Every function signalled a type error on `cl-vctrs-lite:*na*`**
   (`NA is not a string designator`, `The value NA is not of type ...`).
   cl-readr now represents missing text cells as `*na*`, so any CSV column
@@ -62,6 +48,13 @@ All notable changes to this project are documented here. Format follows
   `str_subset`.
 
 ### Tests
+- HMS rounding/alignment regressions add two unit checks and two pinned R
+  cases. Stringr passes 125/125 unit checks and 219/219 conformance cases;
+  the two new R cases both failed before repair (topic: hms coercion edge cases).
+- SR1 adds constructor, matching, Unicode segmentation, recycling, typed
+  owner/coercion and native failure-recovery unit regressions. Umbrella
+  stringr suite: 123/123 checks, previously 37/37. R conformance: 209 new
+  cases, 217 total stringr cases, all passing (topic: SR1 modifiers).
 - `(asdf:test-system :cl-stringr)` now runs the Parachute suite and
   signals an error if it fails; previously the main system had no
   `:in-order-to` and the test system no `:perform`, so nothing ran
