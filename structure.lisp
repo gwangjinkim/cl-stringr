@@ -1,8 +1,9 @@
 (in-package #:cl-stringr)
 
-(define-str-op str-split (s pattern)
-  "Splits each string into pieces based on a pattern."
-  (coerce (cl-ppcre:split pattern s) 'vector))
+(defun str-split (s pattern)
+  "R: stringr::str_split(). Split by a modifier pattern, retaining empty pieces.
+Boundary objects return Unicode segments; missing inputs produce nested NA."
+  (pattern-map :split s pattern))
 
 (defun str-join (string-vector &optional (collapse ""))
   "Joins elements of a vector into a single string."

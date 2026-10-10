@@ -156,6 +156,69 @@ Easily break strings apart or sew them back together.
 
 ---
 
+## Native pattern engine (SR1)
+
+Pattern operations use an independent ICU **71.1** engine, matching the pinned
+R stringi build's Unicode **14.0** data. They do not load R or stringi at runtime.
+Install the native dependency once, in the foreground:
+
+```sh
+scripts/bootstrap-icu.sh
+```
+
+This downloads the official Unicode ICU 71.1 source, verifies SHA-256
+`67a7e6e51f61faf1306b6935333e13b2c48abd8da6d2f46ce6adca24b1e21ebf`,
+and builds into ignored `.native/icu-71.1/`. The script accepts an alternative
+installation prefix as its first argument. `CL_STRINGR_ICU_JOBS` controls
+build concurrency; `CL_STRINGR_ICU_TARBALL` selects a cached source archive.
+The original dependency license is in `docs/ICU-LICENSE.txt`.
+
+The runtime supports POSIX `dlopen`/`dlsym` on macOS and Linux. It prefers the
+local installation; `CL_STRINGR_ICU_LIBRARY` can select an independent ICU
+71.1 internationalization library elsewhere. Missing libraries or incompatible
+versions produce an actionable `pattern-error`. Symbol resolution is scoped to
+the selected library: unrelated loaded ICU versions cannot affect matching.
+Windows native loading is not implemented. Newer ICU versions can recognize
+characters that pinned R treats as unassigned, so they are rejected rather
+than silently changing results.
+
+| Function | Behavior |
+|---|---|
+| `regex` | ICU regex objects; case, multiline, comments, dotall, Unicode word rules, literal mode, limits and native option aliases |
+| `fixed` | Literal objects; ICU simple uppercase comparison when ignoring case, distinct from regex full folding |
+| `coll` | ICU Unicode collation objects, canonical equivalence, locale, strength and collator options |
+| `boundary` | ICU character, word, line-break and sentence segments, including skip options |
+| `str-escape` | Escape regex metacharacters, retaining names, NA and empty string prototypes |
+
+All existing pattern consumers accept modifier vectors and strict scalar
+recycling. Empty and all-NA outputs retain `:bool`, `:int`, `:string` or `:list`
+prototypes. ICU UTF-16 positions are converted to Lisp character positions,
+including astral characters and combining sequences. Explicit empty modifier
+patterns warn and return missing results; bare empty text denotes character
+boundaries. Detection, subset and replacement reject boundary patterns.
+`fixed`/`coll` replacements are literal; regex capture references use backslash
+digits. Pattern errors/warnings subclass the shared tidy condition contract.
+
+Numeric/logical inputs use R-style character coercion; factors use shared
+column labels. Date/datetime owner columns format UTC values, retaining
+fractional seconds and the pinned R per-cell midnight abbreviation. HMS time
+columns retain aligned hours and common fractional precision; nonfinite
+numeric values coerce to `Inf`, `-Inf` and `NaN` text. Constructor
+coercion warns, including typed empty non-character inputs. Pattern values,
+options and optional names are available through the exported pattern protocol;
+`pattern-matches-p` supplies native scalar matching to tidyselect integrations.
+`pattern-scanner` is only a legacy CL-PPCRE adapter and cannot express all native
+ICU semantics.
+
+`str-equal` provides Unicode canonical equality and collation options as required
+by the SR1 plan text; its complete later milestone certification remains open.
+Likewise, modifier support does not complete the existing consumer APIs:
+all eight pattern consumers currently drop string-input names,
+`str-detect`/`str-subset` still lack `:negate`, `str-extract` lacks capture-group
+selection, `str-extract-all` lacks `:simplify`, replacements lack callback/named
+mapping forms, and `str-split` lacks `:n`/`:simplify`. Those are recorded as partial
+in the umbrella parity inventory; no later milestone was started.
+
 ## Full API Reference
 
 ### Basics

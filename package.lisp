@@ -12,6 +12,12 @@
    #:str-to-title
    #:str-to-sentence
    
+   ;; Pattern modifiers and integration protocol
+   #:regex #:fixed #:coll #:boundary #:str-escape #:str-equal
+   #:pattern-object #:pattern-object-p #:pattern-kind #:pattern-values
+   #:pattern-options #:pattern-names #:pattern-named-values
+   #:pattern-scanner #:pattern-matches-p #:pattern-error #:pattern-warning
+
    ;; Pattern Matching
    #:str-detect
    #:str-subset

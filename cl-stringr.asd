@@ -4,10 +4,12 @@
   :license "MIT"
   :version "0.0.1"
   :serial t
-  :depends-on ("cl-ppcre" "alexandria" "cl-vctrs-lite")
+  :depends-on ("cl-ppcre" "alexandria" "cl-vctrs-lite" "cffi" "local-time")
   :components ((:file "package")
                (:file "utils")
                (:file "basics")
+               (:file "icu")
+               (:file "modifiers")
                (:file "pattern")
                (:file "replacement")
                (:file "structure")

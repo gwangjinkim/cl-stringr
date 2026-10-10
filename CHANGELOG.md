@@ -6,6 +6,34 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+- SR1 pattern objects `regex`, `fixed`, `coll` and `boundary` retain vector
+  values, options and names. `str-escape` and initial `str-equal` provide
+  Unicode escaping/equality. Pattern consumers support those objects,
+  scalar recycling and typed empty/all-NA output (topic: SR1 modifiers).
+- Independent pinned ICU 71.1 bootstrap with a verified source checksum,
+  dependency license, configurable native path and version diagnostics;
+  runtime matching never loads R/stringi (topic: SR1 modifiers).
+
+### Changed
+- Pattern consumers use ICU Unicode semantics and locale collation; fixed
+  matching uses simple Unicode uppercase comparisons. Regex replacement
+  keeps capture references while fixed/coll replacements are literal.
+  Native offsets retain the original Lisp strings (topic: SR1 modifiers).
+
+### Fixed
+- Pattern operations retain C2 prototypes and owner-label coercion for
+  numeric/logical/factor/UTC temporal columns, including typed empties and
+  fractional timestamps. Native initialization errors release the library
+  and clear all state before retry (topic: SR1 modifiers).
+
+### Tests
+- SR1 adds constructor, matching, Unicode segmentation, recycling, typed
+  owner/coercion and native failure-recovery unit regressions. Umbrella
+  stringr suite: 123/123 checks, previously 37/37. R conformance: 209 new
+  cases, 217 total stringr cases, all passing (topic: SR1 modifiers).
+
+
 ### Changed
 - AGENTS.md: "Parity work" section listing this repository's parity
   milestones (SR1, SR2, SR3, SR4) and where the plan and backlog live
