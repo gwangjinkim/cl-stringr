@@ -82,6 +82,11 @@ why, and what it means for users. Agents and humans follow these rules.
 4. **Every commit updates `CHANGELOG.md`** under `## [Unreleased]`, in the
    sections *Fixed*, *Added*, *Changed*, *Breaking*, *Tests*. Each entry
    says what users will notice and names the commit topic.
+   Add new entries to the **existing** section of that heading (newest
+   first); never start a second `### Fixed` (etc.) under the same release.
+   Before committing, run
+   `python3 -I ../cl-tidystat/scripts/normalize-changelog.py --check CHANGELOG.md`
+   (without `--check` it merges duplicated sections, losing nothing).
 5. **Run the full test suite before committing** (`make test`, or from the
    umbrella repo `../cl-tidystat/scripts/run-tests.sh <this-package>`) and put
    the result in the commit message. Never commit with a red suite unless
