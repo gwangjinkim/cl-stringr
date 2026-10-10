@@ -24,8 +24,11 @@ Instead of mapping over a list of strings, you pass the whole vector to a `str-`
 ;; => #("a" nil "b")
 ```
 
-### 2. NA-Awareness: The Power of `nil`
-In data science, missing data is common. `cl-stringr` treats `nil` as "NA" (Not Available). Any operation on `nil` returns `nil`, rather than crashing or requiring an extra check. This allows you to chain operations safely.
+### 2. Missing values
+Use `cl-vctrs-lite:*na*` for missing values in shared typed columns.
+Legacy character inputs also accept NIL as a missing marker. In an
+unambiguous logical column NIL means FALSE and stringifies as "FALSE";
+the SR2 section below describes those compatibility boundaries.
 
 ---
 
@@ -80,7 +83,7 @@ It can also take a plist-style list:
 ---
 
 ### 2. Pattern Matching & Extraction
-`cl-stringr` wraps the high-performance `cl-ppcre` engine.
+`cl-stringr` uses the pinned native ICU engine for pattern matching.
 
 - **`str-detect`**: Returns a boolean vector. Great for filtering.
 - **`str-extract`**: Pulls out the first matching substring.
@@ -95,7 +98,7 @@ It can also take a plist-style list:
 
 ;; Extract the year as a number
 (map-str #'parse-integer (str-extract *files* "\\d{4}"))
-;; => #(2023 nil 2024)  ; report_v1 has no year, returns nil safely!
+;; => #(2023 cl-vctrs-lite:*na* 2024)  ; missing matches retain NA
 ```
 
 ---
@@ -156,6 +159,66 @@ Easily break strings apart or sew them back together.
 
 ---
 
+## Native pattern engine (SR1)
+
+Pattern operations use an independent ICU **71.1** engine, matching the pinned
+R stringi build's Unicode **14.0** data. They do not load R or stringi at runtime.
+Install the native dependency once, in the foreground:
+
+```sh
+scripts/bootstrap-icu.sh
+```
+
+This downloads the official Unicode ICU 71.1 source, verifies SHA-256
+`67a7e6e51f61faf1306b6935333e13b2c48abd8da6d2f46ce6adca24b1e21ebf`,
+and builds into ignored `.native/icu-71.1/`. The script accepts an alternative
+installation prefix as its first argument. `CL_STRINGR_ICU_JOBS` controls
+build concurrency; `CL_STRINGR_ICU_TARBALL` selects a cached source archive.
+The original dependency license is in `docs/ICU-LICENSE.txt`.
+
+The runtime supports POSIX `dlopen`/`dlsym` on macOS and Linux. It prefers the
+local installation; `CL_STRINGR_ICU_LIBRARY` can select an independent ICU
+71.1 internationalization library elsewhere. Missing libraries or incompatible
+versions produce an actionable `pattern-error`. Symbol resolution is scoped to
+the selected library: unrelated loaded ICU versions cannot affect matching.
+Windows native loading is not implemented. Newer ICU versions can recognize
+characters that pinned R treats as unassigned, so they are rejected rather
+than silently changing results.
+
+| Function | Behavior |
+|---|---|
+| `regex` | ICU regex objects; case, multiline, comments, dotall, Unicode word rules, literal mode, limits and native option aliases |
+| `fixed` | Literal objects; ICU simple uppercase comparison when ignoring case, distinct from regex full folding |
+| `coll` | ICU Unicode collation objects, canonical equivalence, locale, strength and collator options |
+| `boundary` | ICU character, word, line-break and sentence segments, including skip options |
+| `str-escape` | Escape regex metacharacters, retaining names, NA and empty string prototypes |
+
+All existing pattern consumers accept modifier vectors and strict scalar
+recycling. Empty and all-NA outputs retain `:bool`, `:int`, `:string` or `:list`
+prototypes. ICU UTF-16 positions are converted to Lisp character positions,
+including astral characters and combining sequences. Explicit empty modifier
+patterns warn and return missing results; bare empty text denotes character
+boundaries. Detection, subset and replacement reject boundary patterns.
+`fixed`/`coll` replacements are literal; regex capture references use backslash
+digits. Pattern errors/warnings subclass the shared tidy condition contract.
+
+Numeric/logical inputs use R-style character coercion; factors use shared
+column labels. Date/datetime owner columns format UTC values, retaining
+fractional seconds and the pinned R per-cell midnight abbreviation. HMS time
+columns retain aligned hours and common fractional precision; nonfinite
+numeric values coerce to `Inf`, `-Inf` and `NaN` text. Constructor
+coercion warns, including typed empty non-character inputs. Pattern values,
+options and optional names are available through the exported pattern protocol;
+`pattern-matches-p` supplies native scalar matching to tidyselect integrations.
+`pattern-scanner` is only a legacy CL-PPCRE adapter and cannot express all native
+ICU semantics.
+
+`str-equal` provides Unicode canonical equality and collation options as required
+by the SR1 plan text; its complete later milestone certification remains open.
+SR2 now completes detection, location and capture matching as described below.
+Replacement callback/named mapping forms and split :n/:simplify remain later
+milestone work, with explicit partial status in the umbrella inventory.
+
 ## Full API Reference
 
 ### Basics
@@ -200,3 +263,64 @@ It is a member of the **[cl-tidyverse](https://github.com/cl-tidyverse)** collec
 
 ## License
 MIT
+
+## Detection, locations and captures (SR2)
+
+| R | Common Lisp |
+|---|---|
+| `str_detect`, `str_subset`, `str_which` | `str-detect`, `str-subset`, `str-which` (`:negate`) |
+| `str_starts`, `str_ends` | `str-starts`, `str-ends` (`:negate`) |
+| `str_count` | `str-count` (default Unicode graphemes) |
+| `str_extract`, `str_extract_all` | `str-extract` (`:group`), `str-extract-all` (`:simplify`) |
+| `str_locate`, `str_locate_all` | `str-locate`, `str-locate-all` |
+| `str_match`, `str_match_all` | `str-match`, `str-match-all` |
+| `invert_match` | `invert-match` |
+| `str_like`, `str_ilike` | `str-like`, `str-ilike` |
+
+Detection, counting and extraction preserve the input names where R does;
+subset preserves source column owners. NA uses `cl-vctrs-lite:*na*`.
+Unambiguous logical columns stringify NIL as FALSE; legacy mixed character /
+NIL inputs retain NIL as the established missing marker. Plain patterns must
+be character vectors; regex/fixed/coll modifiers keep their native options.
+Capture matching requires regex patterns. `str-which` returns zero-based
+indices. SQL-like operators implement `%` and `_`; `str-like :ignore-case`
+is deprecated and warns, while `str-ilike` always ignores case.
+
+Matrices are rank-two arrays accessed with `array-dimension` and `aref`.
+Additional return values carry column labels, row/outer names, and the
+`:int` or `:string` prototype, including empty/all-NA results. Private weak
+metadata retains those attributes for `invert-match`. `str-locate-all` and
+`str-match-all` return ordinary proper lists or string-keyed alists; only
+missing names and explicit named-empty collections use typed `:list` columns.
+Their second value holds per-matrix labels, third outer names and fourth
+prototype. Existing `str-extract-all` defaults to a vector of match vectors;
+`:simplify t` returns a matrix padded with empty strings.
+
+Capture selectors follow the same index translation: `:group 0` selects R's
+first capture (group 1), and `:group -1` selects its full match (group 0).
+Numeric vectors select several groups; their negative values translate before
+R's column-exclusion rule (`-2` encodes R group -1, selecting zero columns;
+`-3` encodes R group -2, excluding the full-match column). Fractional selectors
+truncate after translation. Logical selectors retain R arithmetic: `t` selects
+the first capture, and `#(nil)` selects the full match; bare NIL keeps the
+no-group default. Missing selectors produce NA cells. R's dimension-dropping
+rule determines whether selected captures return a vector or a matrix; matrix
+results expose labels, row names and `:string` as additional values.
+
+Location endpoints are zero-based and **inclusive**. Zero-width matches have
+end=start-1. `invert-match` subtracts one from R's sentinel coordinates too:
+leading 0 becomes -1 and trailing -1 becomes -2. These are encoded boundaries;
+the existing `str-sub` consumer has an exclusive end and does not yet support
+the full R location-matrix consumer path (SR3).
+
+```lisp
+(multiple-value-bind (locations labels names prototype)
+    (str-locate #("😀a" "x") "a")
+  (declare (ignore names prototype))
+  (list labels (aref locations 0 0) (aref locations 0 1)))
+;; => (#("start" "end") 1 1)
+```
+
+SR2 validation: 205 native checks and 421 pinned R 4.6.1 / stringr 1.6.0
+reference cases pass, including 202 new detection/location/capture cases.
+Independent review found and protected the one-row capture-name edge cases.

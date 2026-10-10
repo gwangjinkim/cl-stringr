@@ -15,3 +15,6 @@
 *.sx32fsl
 *.wx64fsl
 *.wx32fsl
+
+# Reproducible native ICU dependency; never commit built libraries.
+.native/

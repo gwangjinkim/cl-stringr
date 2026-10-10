@@ -1,9 +1,12 @@
 (in-package #:cl-stringr)
 
-(define-str-op str-replace (s pattern replacement)
-  "Replaces the first occurrence of PATTERN with REPLACEMENT in each string."
-  (cl-ppcre:regex-replace pattern s replacement))
+(defun str-replace (s pattern replacement)
+  "R: stringr::str_replace(). Replace the first match, accepting pattern modifiers.
+Regex replacement backreferences use backslash-digit; fixed/coll replacements
+are literal. NA propagates and boundary patterns signal errors."
+  (pattern-map :replace s pattern replacement))
 
-(define-str-op str-replace-all (s pattern replacement)
-  "Replaces all occurrences of PATTERN with REPLACEMENT in each string."
-  (cl-ppcre:regex-replace-all pattern s replacement))
+(defun str-replace-all (s pattern replacement)
+  "R: stringr::str_replace_all(). Replace all nonoverlapping matches.
+Modifier options and literal fixed/coll replacement semantics are retained."
+  (pattern-map :replace-all s pattern replacement))

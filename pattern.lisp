@@ -1,35 +1,95 @@
 (in-package #:cl-stringr)
 
-(define-str-op str-detect (s pattern)
-  "Detects the presence of a pattern in each string."
-  (if (cl-ppcre:scan pattern s) t nil))
+(defun input-strings (s)
+  ;; Pattern constructors coerce FALSE to text, while existing string consumers
+  ;; retain their legacy NIL missing marker. Owner-specific character conversion
+  ;; is shared so factor/date/timestamp containers never use their host printer.
+  (let ((values (string-vector s)))
+    (when (and (vectorp s) (not (stringp s)))
+      (dotimes (i (length s)) (when (null (aref s i)) (setf (aref values i) nil))))
+    values))
 
-(defun str-subset (s pattern)
-  "Returns strings that match the pattern."
-  (let* ((vec (if (and (vectorp s) (not (stringp s))) s (vector s)))
-         (matches (str-detect vec pattern))
-         (result (make-array (count t matches) :fill-pointer 0 :adjustable t)))
-    (loop for i from 0 below (length vec)
-          ;; only definite matches: a missing input gives NA/NIL, never T,
-          ;; so it is dropped (like R's str_subset)
-          when (eq t (elt matches i))
-          do (vector-push-extend (elt vec i) result))
-    result))
+(defun recycle-size (&rest vectors)
+  (let ((sizes (mapcar #'length vectors)))
+    (let ((n (if (member 0 sizes) 0 (apply #'max sizes))))
+      (unless (every (lambda (size) (or (= size n) (= size 1))) sizes)
+        (fail-pattern "String and pattern lengths must be equal or one."))
+      n)))
 
-(define-str-op str-extract (s pattern)
-  "Extracts the first match of the pattern in each string."
-  (cl-ppcre:scan-to-strings pattern s))
+(defun pattern-map (operation s pattern &optional replacement)
+  (let* ((strings (input-strings s))
+         (object (if (pattern-object-p pattern) pattern (regex pattern)))
+         (values (pattern-values object))
+         (nested (member operation '(:extract-all :split)))
+         (boundary-p (eq (pattern-kind object) :boundary))
+         ;; Bare empty patterns mean character boundaries for these consumers.
+         (bare-empty (and (not (pattern-object-p pattern))
+                          (= (length values) 1) (equal (aref values 0) "")))
+         (replacements (when (member operation '(:replace :replace-all)) (input-strings replacement)))
+         (n (if replacements (recycle-size strings values replacements) (recycle-size strings values)))
+         (result (make-array n)))
+    (when bare-empty (setf object (boundary :character) boundary-p t))
+    (when (and boundary-p (member operation '(:detect :replace :replace-all)))
+      (fail-pattern "This string operation does not accept boundary patterns."))
+    (when (and (plusp n) (not boundary-p) (find "" values :test #'equal))
+      (warn-pattern "Empty search patterns are not supported."))
+    (dotimes (i n)
+      (let* ((string (aref strings (if (= (length strings) 1) 0 i)))
+             (value (aref values (if (= (length values) 1) 0 i)))
+             (rep (when replacements (aref replacements (if (= (length replacements) 1) 0 i))))
+             (missing (or (missing-p string) (and (not boundary-p) (missing-p value))
+                          (and replacements (missing-p rep))
+                          (and (not boundary-p) (equal value "")))))
+        (setf (aref result i)
+              (if missing
+                  (let ((na (if (or (cl-vctrs-lite:na-p string) (cl-vctrs-lite:na-p value)
+                                    (cl-vctrs-lite:na-p rep) (equal value ""))
+                                cl-vctrs-lite:*na* nil)))
+                    (if nested (vector na) na))
+                  (let* ((spans (pattern-spans string object value)) (first (car spans)))
+                    (ecase operation
+                      (:detect (not (null first)))
+                      (:count (length spans))
+                      (:extract (if first (subseq string (car first) (cdr first)) cl-vctrs-lite:*na*))
+                      (:extract-all (map 'vector (lambda (span) (subseq string (car span) (cdr span))) spans))
+                      (:split
+                       (if boundary-p
+                           (map 'vector (lambda (span) (subseq string (car span) (cdr span))) spans)
+                           (coerce (loop with start = 0 with pieces = nil
+                                         for span in spans
+                                         do (push (subseq string start (car span)) pieces)
+                                            (setf start (cdr span))
+                                         finally (return (nreverse (cons (subseq string start) pieces)))) 'vector)))
+                      ((:replace :replace-all)
+                       (if (eq (pattern-kind object) :regex)
+                           (icu-regex-replace string value rep (pattern-options object) (eq operation :replace-all))
+                           (with-output-to-string (out)
+                             (let ((start 0))
+                               (dolist (span (if (eq operation :replace) (when first (list first)) spans))
+                                 (write-string string out :start start :end (car span))
+                                 (write-string rep out) (setf start (cdr span)))
+                               (write-string string out :start start)))))))))))
+    (if (and (member operation '(:count :extract :replace :replace-all))
+             (position nil result))
+        result
+        (cl-vctrs-lite:make-typed-column result
+             (ecase operation (:detect :bool) (:count :int) (:extract :string)
+                    ((:extract-all :split) :list) ((:replace :replace-all) :string))))))
 
-(define-str-op str-count (s pattern)
-  "Counts the number of times a pattern appears in each string."
-  (let ((count 0))
-    (cl-ppcre:do-matches (s2 e2 pattern s)
-      (incf count))
-    count))
+(defun pattern-matches-p (pattern string)
+  "R: stringr::str_detect(). Match a scalar pattern using native ICU Unicode semantics; NA propagates.
+Regex, fixed and coll objects are accepted. Boundary patterns signal an error."
+  (let ((result (str-detect string pattern)))
+    (unless (= 1 (length result)) (fail-pattern "A scalar pattern is required."))
+    (aref result 0)))
 
-(define-str-op str-extract-all (s pattern)
-  "Extracts all matches of the pattern in each string."
-  (let (results)
-    (cl-ppcre:do-matches-as-strings (m pattern s)
-      (push m results))
-    (coerce (nreverse results) 'vector)))
+(defun str-equal (x y &rest options &key (locale "en") (ignore-case nil) &allow-other-keys)
+  "R: stringr::str_equal(). Compare canonically equivalent strings with ICU.
+Scalar recycling and NA propagation apply; collation options match COLL."
+  (let* ((object (apply #'coll "" :locale locale :ignore-case ignore-case options))
+         (xs (input-strings x)) (ys (input-strings y)) (n (recycle-size xs ys)) (out (make-array n)))
+    (dotimes (i n)
+      (let ((a (aref xs (if (= 1 (length xs)) 0 i))) (b (aref ys (if (= 1 (length ys)) 0 i))))
+        (setf (aref out i) (if (or (missing-p a) (missing-p b)) (missing-result (list a b))
+                              (icu-equal-p a b (pattern-options object))))))
+    (cl-vctrs-lite:make-typed-column out :bool)))
